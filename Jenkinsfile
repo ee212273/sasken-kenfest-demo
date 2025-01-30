@@ -28,18 +28,18 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
-/*
+
         stage('SonarQube Scan') {
             steps {
                 script {
                     try {
                         echo "Running SonarQube analysis..."
-                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SonarQube')]) {
                             sh """
                             mvn clean verify sonar:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.login=$SONAR_TOKEN
+                              -Dsonar.projectKey=Sasken-KenFest-Demo \
+                              -Dsonar.host.url=http://43.204.43.201:9000 \
+                              -Dsonar.login=sqp_19ea17860bbf15a7c5709fe1fba476ab246f6bde
                             """
                         }
                         echo "SonarQube analysis completed successfully."
@@ -51,7 +51,7 @@ pipeline {
                 }
             }
         }
-*/
+
         stage('Trivy Scan') {
             steps {
                 echo "Running Trivy scan..."
