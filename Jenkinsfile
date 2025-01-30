@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'K8s' }
+    agent { label 'k8s' }
 
     environment {
         REGION = 'us-west-2'
