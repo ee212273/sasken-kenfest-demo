@@ -110,10 +110,7 @@ pipeline {
                 sh '''
                     echo "Current directory:"
                     pwd
-                    cd ../..  # Change to the desired directory
-                    echo "Changed to directory:"
-                    pwd
-                    kubectl apply -f deploy.yaml
+                    kubectl apply -f deployment-service.yaml
                     kubectl rollout restart deployment boardgame-deployment
                 '''
             }
