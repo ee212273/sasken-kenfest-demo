@@ -99,7 +99,7 @@ pipeline {
                     echo "Current directory:"
                     pwd
                     kubectl apply -f deployment-service.yaml
-                   // kubectl rollout restart deployment boardgame-deployment
+                    kubectl rollout restart deployment boardgame-deployment
                 '''
     }
 }
