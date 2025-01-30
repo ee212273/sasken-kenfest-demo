@@ -29,20 +29,24 @@ pipeline {
             }
         }
 
-        stage('SonarQube Scan') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     try {
                         echo "Running SonarQube analysis..."
-                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SonarQube')]) {
+                        def sonarEnabled = true // Example condition
+                        if (sonarEnabled) {
                             sh """
                             mvn clean verify sonar:sonar \
-                              -Dsonar.projectKey=Sasken-KenFest-Demo \
-                              -Dsonar.host.url=http://43.204.43.201:9000 \
-                              -Dsonar.login=sqp_19ea17860bbf15a7c5709fe1fba476ab246f6bde
+								-Dsonar.projectKey=Sasken-KenFest-Demo \
+								-Dsonar.host.url=http://43.204.43.201:9000 \
+								-Dsonar.login=sqp_19ea17860bbf15a7c5709fe1fba476ab246f6bde
                             """
+                            
+                            echo "SonarQube analysis completed successfully."
+                        } else {
+                            echo "Skipping SonarQube analysis as it is disabled."
                         }
-                        echo "SonarQube analysis completed successfully."
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
