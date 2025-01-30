@@ -4,6 +4,8 @@ pipeline {
     environment {
         REGION = 'us-west-2'
         ECR_REPO = '036965198866.dkr.ecr.us-west-2.amazonaws.com/sasken/kenfest'
+        SONAR_HOST_URL = 'http://43.205.103.118:9000'
+        SONAR_PROJECT_KEY = 'jenkins'
     }
 
     stages {
@@ -11,40 +13,45 @@ pipeline {
             steps {
                 echo "Cloning repository..."
                 git url: 'https://github.com/saskendevops/Githubactions-CICD.git', branch: 'main'
+                script {
+                    def branch = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                    def commit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    echo "Branch: ${branch}"
+                    echo "Commit: ${commit}"
+                }
             }
         }
+
         stage('Build') {
             steps {
                 echo "Building the code..."
                 sh 'mvn clean package'
             }
         }
-    //     stage('SonarQube Scan') {
-    //     steps {
-    //      script {
-    //       try {
-    //         echo "Running SonarQube analysis..."
-    //         def sonarEnabled = true // Example condition
-    //         if (sonarEnabled) {
-    //           sh """
-    //           mvn clean verify sonar:sonar \
-    //            -Dsonar.projectKey=jenkins \
-    //            -Dsonar.host.url=http://43.205.103.118:9000 \
-    //            -Dsonar.login=sqp_0f8142335919bc4b518d159167e4dbb3fb96ebba 
-				// """
-
-    //           echo "SonarQube analysis completed successfully."
-    //         } else {
-    //           echo "Skipping SonarQube analysis as it is disabled."
-    //         }
-    //       } catch (Exception e) {
-    //         echo "SonarQube analysis failed: ${e.message}"
-    //         currentBuild.result = 'FAILURE'
-    //         error("Exiting pipeline due to failure in SonarQube Analysis stage.")
-    //       }
-    //     }
-    //   }
-    //  }
+/*
+        stage('SonarQube Scan') {
+            steps {
+                script {
+                    try {
+                        echo "Running SonarQube analysis..."
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                            sh """
+                            mvn clean verify sonar:sonar \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.login=$SONAR_TOKEN
+                            """
+                        }
+                        echo "SonarQube analysis completed successfully."
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Exiting pipeline due to failure in SonarQube Analysis stage.")
+                    }
+                }
+            }
+        }
+*/
         stage('Trivy Scan') {
             steps {
                 echo "Running Trivy scan..."
@@ -53,12 +60,14 @@ pipeline {
                 """
             }
         }
+
         stage('Docker Build') {
             steps {
                 echo "Building Docker image..."
                 sh "docker build -t pranay356/demo:latest ."
             }
         }
+
         stage('SBOM Generation') {
             steps {
                 echo "Generating SBOM file using Trivy..."
@@ -66,6 +75,7 @@ pipeline {
                 archiveArtifacts artifacts: 'sbom.cyclonedx.json', fingerprint: true
             }
         }
+
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
@@ -77,6 +87,7 @@ pipeline {
                 }
             }
         }
+
         stage('Image push to ECR') {
             steps {
                 echo "Pushing image to ECR..."
@@ -84,34 +95,30 @@ pipeline {
                     sh """
                     aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                     aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set region us-west-2
-                    aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 036965198866.dkr.ecr.us-west-2.amazonaws.com
-                    docker tag pranay356/demo:latest 036965198866.dkr.ecr.us-west-2.amazonaws.com/sasken/kenfest:latest
-                    docker push 036965198866.dkr.ecr.us-west-2.amazonaws.com/sasken/kenfest:latest
+                    aws configure set region $REGION
+                    aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_REPO
+                    docker tag pranay356/demo:latest $ECR_REPO:latest
+                    docker push $ECR_REPO:latest
                     """
                 }
             }
         }
+
         stage('Deployment') {
-          steps {
+            steps {
                 echo "Deployment in K8s Cluster is in progress..."
                 sh '''
                     echo "Current directory:"
                     pwd
-                    kubectl apply -f deployment-service.yaml
+                    cd ../..  # Change to the desired directory
+                    echo "Changed to directory:"
+                    pwd
+                    kubectl apply -f deploy.yaml
                     kubectl rollout restart deployment boardgame-deployment
                 '''
-    }
-}
-      /*  
-        stage('Clean Workspace') {
-            steps {
-                echo "Cleaning workspace"
-                cleanWs()
             }
         }
-        */
-    }
 
-   
+        
+    }
 }
