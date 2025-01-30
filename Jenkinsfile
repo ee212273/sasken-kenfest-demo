@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'K8-agent' }
+    agent { label 'K8s' }
 
     environment {
         REGION = 'us-west-2'
@@ -19,32 +19,32 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
-        stage('SonarQube Scan') {
-        steps {
-         script {
-          try {
-            echo "Running SonarQube analysis..."
-            def sonarEnabled = true // Example condition
-            if (sonarEnabled) {
-              sh """
-              mvn clean verify sonar:sonar \
-               -Dsonar.projectKey=jenkins \
-               -Dsonar.host.url=http://43.205.103.118:9000 \
-               -Dsonar.login=sqp_0f8142335919bc4b518d159167e4dbb3fb96ebba 
-				"""
+    //     stage('SonarQube Scan') {
+    //     steps {
+    //      script {
+    //       try {
+    //         echo "Running SonarQube analysis..."
+    //         def sonarEnabled = true // Example condition
+    //         if (sonarEnabled) {
+    //           sh """
+    //           mvn clean verify sonar:sonar \
+    //            -Dsonar.projectKey=jenkins \
+    //            -Dsonar.host.url=http://43.205.103.118:9000 \
+    //            -Dsonar.login=sqp_0f8142335919bc4b518d159167e4dbb3fb96ebba 
+				// """
 
-              echo "SonarQube analysis completed successfully."
-            } else {
-              echo "Skipping SonarQube analysis as it is disabled."
-            }
-          } catch (Exception e) {
-            echo "SonarQube analysis failed: ${e.message}"
-            currentBuild.result = 'FAILURE'
-            error("Exiting pipeline due to failure in SonarQube Analysis stage.")
-          }
-        }
-      }
-     }
+    //           echo "SonarQube analysis completed successfully."
+    //         } else {
+    //           echo "Skipping SonarQube analysis as it is disabled."
+    //         }
+    //       } catch (Exception e) {
+    //         echo "SonarQube analysis failed: ${e.message}"
+    //         currentBuild.result = 'FAILURE'
+    //         error("Exiting pipeline due to failure in SonarQube Analysis stage.")
+    //       }
+    //     }
+    //   }
+    //  }
         stage('Trivy Scan') {
             steps {
                 echo "Running Trivy scan..."
